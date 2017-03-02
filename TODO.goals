@@ -1,6 +1,8 @@
-StrokeType
-    S
-    D
-StrokeWeightInPixels
-StrokeReds
-StrokeColor
+Add support for stroke customization
+    StrokeType
+        S
+        D
+    StrokeWeightInPixels
+    StrokeReds
+    StrokeColor
+Add unit tests for geotable features
