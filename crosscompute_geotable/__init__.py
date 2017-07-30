@@ -4,9 +4,9 @@ import re
 from crosscompute.exceptions import DataTypeError
 from crosscompute.scripts.serve import import_upload
 from crosscompute_table import TableType
+from invisibleroads_macros.calculator import define_normalize
 from invisibleroads_macros.geometry import (
     drop_z, flip_xy, transform_geometries)
-from invisibleroads_macros.math import define_normalize
 from invisibleroads_macros.table import normalize_key
 from math import floor
 from os.path import exists
