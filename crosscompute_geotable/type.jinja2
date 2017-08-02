@@ -58,7 +58,9 @@ $.each(CC.geotable.definitions, draw_map);
 </tbody>
 {% endfor %}
 </table>
+
 <script>
+{# render geojson here #}
 CC.geotable.definitions['{{ key }}'] = [[
 {% for geometry_type_id, geometry_coordinates, local_properties, local_table in items %}
 [{{ geometry_type_id }}, {{ geometry_coordinates }}, {
