@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import re
 from crosscompute.exceptions import DataTypeError
-from crosscompute.scripts.serve import import_upload
+from crosscompute.scripts.serve import import_upload_from
 from crosscompute_table import TableType
 from invisibleroads_macros.calculator import define_normalize
 from invisibleroads_macros.geometry import (
@@ -195,7 +195,7 @@ class GeoTable(pd.DataFrame):
 
 
 def import_geotable(request):
-    return import_upload(request, GeoTableType, {})
+    return import_upload_from(request, GeoTableType, {})
 
 
 def get_geometry_column_names(column_names):
