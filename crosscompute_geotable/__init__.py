@@ -126,6 +126,7 @@ class GeoTableType(TableType):
     views = [
         'import_geotable',
     ]
+    requires_default_value = False
 
     @classmethod
     def load(Class, path):
