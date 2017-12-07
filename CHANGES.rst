@@ -1,3 +1,7 @@
+0.7
+---
+- Increase maximum row count to 100
+
 0.6
 ---
 - Use mapbox.js 3.0.1
