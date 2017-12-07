@@ -303,7 +303,7 @@ def _define_summarize_colors(summary_type):
         try:
             return np.array(colorConverter.to_rgb(x))
         except ValueError:
-            raise DataTypeError('could not parse color (%s)' % x)
+            raise DataTypeError('color not recognized (%s)' % x)
 
     def summarize(string_series):
         rgb_arrays = string_series.apply(_get_rgb_array)
