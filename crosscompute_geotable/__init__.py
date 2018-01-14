@@ -145,8 +145,8 @@ class GeoTableType(TableType):
                 proj4 or geometryIO.proj4LL)
             geometries = [normalize_geometry(x) for x in geometries]
             # Convert to (latitude, longitude)
-            geometries = transform_geometries(geometries, drop_z)
             geometries = transform_geometries(geometries, flip_xy)
+            geometries = transform_geometries(geometries, drop_z)
             # Generate table
             table = pd.DataFrame(field_packs, columns=[
                 x[0] for x in field_definitions])
@@ -158,12 +158,14 @@ class GeoTableType(TableType):
 
 class GeoTable(pd.DataFrame):
 
-    @property
-    def _constructor(self):
-        return GeoTable
+    _metadata = ['_packs', '_properties']
 
-    def interpret(self):
-        items, properties = [], {}
+    def __init__(self, *args, **kw):
+        super(GeoTable, self).__init__(*args, **kw)
+        self._packs, self._properties = self._interpret()
+
+    def _interpret(self):
+        packs, properties = [], {}
         geometry_column_names = get_geometry_column_names(self.columns)
         if not geometry_column_names:
             raise DataTypeError(
@@ -189,10 +191,10 @@ class GeoTable(pd.DataFrame):
                 local_properties, local_table = transform(
                     local_properties, local_table)
             local_table = local_table.drop(geometry_column_names, axis=1)
-            items.append((
+            packs.append((
                 geometry_type_id, geometry_coordinates, local_properties,
                 local_table))
-        return items, properties
+        return packs, properties
 
 
 def import_geotable(request):

@@ -82,6 +82,8 @@ except ImportError:
                 'POINT': 1,
                 'LINESTRING': 2,
                 'MULTILINESTRING': 3,
+                'POLYGON': 4,
+                'MULTIPOLYGON': 5,
             }[geometry_type]
         except KeyError:
             raise DataTypeError(
@@ -90,10 +92,22 @@ except ImportError:
             geometry_coordinates = _parse_geometry_coordinates(xys_string)[0]
         elif geometry_type_id == 2:
             geometry_coordinates = _parse_geometry_coordinates(xys_string)
-        else:
+        elif geometry_type_id == 3:
             xys_strings = SEQUENCE_PATTERN.findall(xys_string)
             geometry_coordinates = [
                 _parse_geometry_coordinates(_) for _ in xys_strings]
+        elif geometry_type_id == 4:
+            xys_strings = SEQUENCE_PATTERN.findall(xys_string)
+            geometry_coordinates = _parse_geometry_coordinates(xys_strings[0])
+        elif geometry_type_id == 5:
+            xys_strings = SEQUENCE_PATTERN.findall(xys_string)
+            geometry_coordinates = []
+            for xy_string in xys_strings:
+                if not xy_string.startswith('('):
+                    continue
+                xy_string = xy_string.replace('(', '')
+                geometry_coordinates.append(_parse_geometry_coordinates(
+                    xy_string))
         return geometry_type_id, geometry_coordinates
 
     def _parse_geometry_coordinates(xys_string):
@@ -109,19 +123,36 @@ except ImportError:
 
     print('Please install shapely for extended geometry support')
 else:
+    from shapely.errors import WKTReadingError
+
     def _parse_geometry(geometry_wkt):
-        geometry = wkt.loads(geometry_wkt)
+        try:
+            geometry = wkt.loads(geometry_wkt)
+        except WKTReadingError:
+            raise DataTypeError(
+                'geometry wkt not parseable (%s)' % geometry_wkt)
         geometry_type = geometry.type.upper()
         if geometry_type == 'POINT':
             geometry_type_id = 1
             geometry_coordinates = list(geometry.coords[0][:2])
         elif geometry_type == 'LINESTRING':
             geometry_type_id = 2
-            geometry_coordinates = [list(x[:2]) for x in geometry.coords]
+            geometry_coordinates = [
+                list(x[:2]) for x in geometry.coords]
         elif geometry_type == 'MULTILINESTRING':
             geometry_type_id = 3
             geometry_coordinates = [[
-                list(x[:2]) for x in geom.coords] for geom in geometry.geoms]
+                list(x[:2]) for x in geom.coords
+            ] for geom in geometry.geoms]
+        elif geometry_type == 'POLYGON':
+            geometry_type_id = 4
+            geometry_coordinates = [
+                list(x[:2]) for x in geometry.exterior.coords]
+        elif geometry_type == 'MULTIPOLYGON':
+            geometry_type_id = 5
+            geometry_coordinates = [[
+                list(x[:2]) for x in geom.exterior.coords
+            ] for geom in geometry.geoms]
         else:
             raise DataTypeError(
                 'geometry type not supported (%s)' % geometry_type)

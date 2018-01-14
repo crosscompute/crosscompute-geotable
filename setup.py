@@ -11,7 +11,7 @@ DESCRIPTION = '\n\n'.join(open(join(FOLDER, x)).read().strip() for x in [
     'CHANGES.rst', 'README.rst'])
 setup(
     name='crosscompute-geotable',
-    version='0.7.3',
+    version='0.7.5',
     description='Geotable data type plugin for CrossCompute',
     long_description=DESCRIPTION,
     classifiers=[
@@ -31,10 +31,10 @@ setup(
         'pytest-runner',
     ],
     install_requires=[
-        'invisibleroads-macros>=0.9.1',
-        'invisibleroads-uploads>=0.4.1',
-        'crosscompute>=0.7.3',
-        'crosscompute-table>=0.7.0.1',
+        'invisibleroads-macros>=0.9.3',
+        'invisibleroads-uploads>=0.4.2.1',
+        'crosscompute>=0.7.5',
+        'crosscompute-table>=0.7.5',
         'numpy',
         'pandas',
         'six',

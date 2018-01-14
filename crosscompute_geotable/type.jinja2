@@ -34,14 +34,15 @@ $.each(CC.geotable.definitions, draw_map);
 
 {% if table is not none %}
 {% set row_count = table.index.shape[0] %}
-{% set is_big = row_count > maximum_row_count %}
+{% set packs = table._packs %}
 
+{% set is_big = row_count > maximum_row_count %}
 {% if is_big %}
-{% set table = table[:maximum_row_count] %}
+{% set packs = packs[:maximum_row_count] %}
 {% endif %}
 
-{% set items, properties = table.interpret() %}
-{% set column_names = items[0][-1].columns if items else [] %}
+{% set column_names = packs[0][-1].columns if packs else [] %}
+{% set properties = table._properties %}
 <div id="{{ key }}-map" class="geotable-map"></div>
 
 {% if is_big %}
@@ -50,7 +51,7 @@ $.each(CC.geotable.definitions, draw_map);
 
 <table id="{{ key }}-table" class="table geotable-table">
 <thead><tr>{% for column_name in column_names %}<th>{{ column_name }}</th>{% endfor %}</tr></thead>
-{% for geometry_type_id, geometry_coordinates, local_properties, local_table in items %}
+{% for geometry_type_id, geometry_coordinates, local_properties, local_table in packs %}
 <tbody id="{{ key }}-row{{ loop.index0 }}">
 {%- for index, row in local_table.fillna('').iterrows() -%}
 <tr>{% for value in row %}<td>{{ value }}</td>{% endfor %}</tr>
@@ -62,7 +63,7 @@ $.each(CC.geotable.definitions, draw_map);
 <script>
 {# render geojson here #}
 CC.geotable.definitions['{{ key }}'] = [[
-{% for geometry_type_id, geometry_coordinates, local_properties, local_table in items %}
+{% for geometry_type_id, geometry_coordinates, local_properties, local_table in packs %}
 [{{ geometry_type_id }}, {{ geometry_coordinates }}, {
 {%- for k, v in local_properties.items() %}
 '{{ k }}': '{{ v }}'
