@@ -14,7 +14,7 @@ from os.path import exists
 from .fallbacks import colorConverter, _parse_geometry, rgb2hex
 
 
-MAXIMUM_DISPLAY_COUNT = 100
+MAXIMUM_DISPLAY_COUNT = 256
 
 
 # These color schemes are courtesy of http://colorbrewer2.org

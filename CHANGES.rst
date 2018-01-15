@@ -1,6 +1,6 @@
 0.7
 ---
-- Increase maximum row count to 100
+- Increase MAXIMUM_DISPLAY_COUNT to 256
 
 0.6
 ---
