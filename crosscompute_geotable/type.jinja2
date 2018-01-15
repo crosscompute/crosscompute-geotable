@@ -1,5 +1,4 @@
 {% from 'invisibleroads_uploads:templates/parts.jinja2' import upload_button %}
-{% set maximum_row_count = 100 %}
 
 {% macro head_style_loaded(request) %}
 <link rel="stylesheet" href="//api.mapbox.com/mapbox.js/v3.0.1/mapbox.css">
@@ -34,19 +33,12 @@ $.each(CC.geotable.definitions, draw_map);
 
 {% if table is not none %}
 {% set row_count = table.index.shape[0] %}
-{% set packs = table._packs %}
-
-{% set is_big = row_count > maximum_row_count %}
-{% if is_big %}
-{% set packs = packs[:maximum_row_count] %}
-{% endif %}
-
+{% set packs, properties = table.display_bundle %}
 {% set column_names = packs[0][-1].columns if packs else [] %}
-{% set properties = table._properties %}
 <div id="{{ key }}-map" class="geotable-map"></div>
 
-{% if is_big %}
-<div class="alert alert-warning">Showing first {{ '{:,}'.format(maximum_row_count) }} out of {{ '{:,}'.format(row_count) }} features</div>
+{% if table.is_abbreviated %}
+<div class="alert alert-warning">Showing first {{ '{:,}'.format(packs|length) }} out of {{ '{:,}'.format(row_count) }} features</div>
 {% endif %}
 
 <table id="{{ key }}-table" class="table geotable-table">

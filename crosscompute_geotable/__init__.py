@@ -14,6 +14,9 @@ from os.path import exists
 from .fallbacks import colorConverter, _parse_geometry, rgb2hex
 
 
+MAXIMUM_DISPLAY_COUNT = 100
+
+
 # These color schemes are courtesy of http://colorbrewer2.org
 HEX_ARRAY_BY_COLOR_SCHEME = {
     'bugn': [
@@ -158,47 +161,50 @@ class GeoTableType(TableType):
 
 class GeoTable(pd.DataFrame):
 
-    _metadata = ['_packs', '_properties']
+    _metadata = ['display_bundle']
 
     def __init__(self, *args, **kw):
         super(GeoTable, self).__init__(*args, **kw)
-        self._packs, self._properties = self._interpret()
-
-    def _interpret(self):
-        packs, properties = [], {}
-        geometry_column_names = get_geometry_column_names(self.columns)
-        if not geometry_column_names:
-            raise DataTypeError(
-                'geometry columns missing (%s)' % ', '.join(self.columns))
-        if len(geometry_column_names) > 1:
-            parse_geometry = _parse_point_from_tuple
-        else:
-            parse_geometry = _parse_geometry
-        transforms = []
-        for get_transform in [
-                _get_fill_color_transform,
-                _get_radius_transform]:
-            transform = get_transform(self, geometry_column_names)
-            if not transform:
-                continue
-            transforms.append(transform)
-
-        for geometry_value, local_table in self.groupby(geometry_column_names):
-            geometry_type_id, geometry_coordinates = parse_geometry(
-                geometry_value)
-            local_properties = {}
-            for transform in transforms:
-                local_properties, local_table = transform(
-                    local_properties, local_table)
-            local_table = local_table.drop(geometry_column_names, axis=1)
-            packs.append((
-                geometry_type_id, geometry_coordinates, local_properties,
-                local_table))
-        return packs, properties
+        # Prepare display bundle in constructor to capture data type errors
+        self.display_bundle = get_display_bundle(self[:MAXIMUM_DISPLAY_COUNT])
+        self.is_abbreviated = len(self) > MAXIMUM_DISPLAY_COUNT
 
 
 def import_geotable(request):
     return import_upload_from(request, GeoTableType, {})
+
+
+def get_display_bundle(table):
+    packs, properties = [], {}
+    geometry_column_names = get_geometry_column_names(table.columns)
+    if not geometry_column_names:
+        raise DataTypeError(
+            'geometry columns missing (%s)' % ', '.join(table.columns))
+    if len(geometry_column_names) > 1:
+        parse_geometry = _parse_point_from_tuple
+    else:
+        parse_geometry = _parse_geometry
+    transforms = []
+    for get_transform in [
+            _get_fill_color_transform,
+            _get_radius_transform]:
+        transform = get_transform(table, geometry_column_names)
+        if not transform:
+            continue
+        transforms.append(transform)
+
+    for geometry_value, local_table in table.groupby(geometry_column_names):
+        geometry_type_id, geometry_coordinates = parse_geometry(
+            geometry_value)
+        local_properties = {}
+        for transform in transforms:
+            local_properties, local_table = transform(
+                local_properties, local_table)
+        local_table = local_table.drop(geometry_column_names, axis=1)
+        packs.append((
+            geometry_type_id, geometry_coordinates, local_properties,
+            local_table))
+    return packs, properties
 
 
 def get_geometry_column_names(column_names):
