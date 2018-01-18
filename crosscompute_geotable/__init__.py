@@ -132,7 +132,7 @@ class GeoTableType(TableType):
     requires_value_for_path = False
 
     @classmethod
-    def load(Class, path):
+    def load(Class, path, default_value=None):
         if not exists(path):
             raise IOError('path not found (%s)' % path)
         if path.endswith('.zip'):
