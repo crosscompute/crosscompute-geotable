@@ -134,7 +134,7 @@ class GeoTableType(TableType):
     @classmethod
     def load(Class, path, default_value=None):
         if not exists(path):
-            raise IOError('path not found (%s)' % path)
+            raise IOError('file not found (%s)' % path)
         if path.endswith('.zip'):
             import geometryIO
             [
