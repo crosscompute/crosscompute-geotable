@@ -5,13 +5,12 @@ from crosscompute.exceptions import DataTypeError
 from crosscompute.scripts.serve import import_upload_from
 from crosscompute_table import TableType
 from invisibleroads_macros.calculator import define_normalize
-from invisibleroads_macros.geometry import (
-    drop_z, flip_xy, transform_geometries)
+from invisibleroads_macros.geometry import drop_z, flip_xy
 from invisibleroads_macros.table import normalize_key
 from math import floor
 from os.path import exists
 
-from .fallbacks import colorConverter, _parse_geometry, rgb2hex
+from .fallbacks import _parse_geometry, colorConverter, load_geotable, rgb2hex
 
 
 MAXIMUM_DISPLAY_COUNT = 256
@@ -122,7 +121,6 @@ RADIUS_COLUMN_PATTERN = re.compile(
 
 class GeoTableType(TableType):
     suffixes = 'geotable',
-    formats = TableType.formats + ('zip',)
     style = 'crosscompute_geotable:assets/part.min.css'
     script = 'crosscompute_geotable:assets/part.min.js'
     template = 'crosscompute_geotable:type.jinja2'
@@ -135,36 +133,15 @@ class GeoTableType(TableType):
     def load(Class, path, default_value=None):
         if not exists(path):
             raise IOError('file not found (%s)' % path)
-        if path.endswith('.zip'):
-            import geometryIO
-            [
-                proj4,
-                geometries,
-                field_packs,
-                field_definitions,
-            ] = geometryIO.load(path)
-            # Convert to (longitude, latitude)
-            normalize_geometry = geometryIO.get_transformGeometry(
-                proj4 or geometryIO.proj4LL)
-            geometries = [normalize_geometry(x) for x in geometries]
-            # Convert to (latitude, longitude)
-            geometries = transform_geometries(geometries, flip_xy)
-            geometries = transform_geometries(geometries, drop_z)
-            # Generate table
-            table = pd.DataFrame(field_packs, columns=[
-                x[0] for x in field_definitions])
-            table['WKT'] = [x.wkt for x in geometries]
-        else:
-            table = super(GeoTableType, Class).load(path)
-        return GeoTable(table)
+        return DisplayTable(load_geotable(path))
 
 
-class GeoTable(pd.DataFrame):
+class DisplayTable(pd.DataFrame):
 
     _metadata = ['display_bundle']
 
     def __init__(self, *args, **kw):
-        super(GeoTable, self).__init__(*args, **kw)
+        super(DisplayTable, self).__init__(*args, **kw)
         # Prepare display bundle in constructor to capture data type errors
         self.display_bundle = get_display_bundle(self[:MAXIMUM_DISPLAY_COUNT])
         self.is_abbreviated = len(self) > MAXIMUM_DISPLAY_COUNT
@@ -196,6 +173,8 @@ def get_display_bundle(table):
     for geometry_value, local_table in table.groupby(geometry_column_names):
         geometry_type_id, geometry_coordinates = parse_geometry(
             geometry_value)
+        geometry_coordinates = _normalize_coordinates(
+            geometry_type_id, geometry_coordinates)
         local_properties = {}
         for transform in transforms:
             local_properties, local_table = transform(
@@ -210,13 +189,12 @@ def get_display_bundle(table):
 def get_geometry_column_names(column_names):
     wkt_column_names = [x for x in column_names if is_wkt(x)]
     if wkt_column_names:
-        # Assume WKT coordinate order is (latitude, longitude)
+        # Assume WKT coordinate order is (longitude, latitude)
         return [wkt_column_names[0]]
-    latitude_column_names = [x for x in column_names if is_latitude(x)]
     longitude_column_names = [x for x in column_names if is_longitude(x)]
-    if latitude_column_names and longitude_column_names:
-        # Use ISO 6709 coordinate order: (latitude, longitude)
-        return [latitude_column_names[0], longitude_column_names[0]]
+    latitude_column_names = [x for x in column_names if is_latitude(x)]
+    if longitude_column_names and latitude_column_names:
+        return [longitude_column_names[0], latitude_column_names[0]]
 
 
 def is_wkt(column_name):
@@ -232,6 +210,26 @@ def is_latitude(column_name):
 def is_longitude(column_name):
     column_name = column_name.lower()
     return column_name.endswith('longitude') or column_name == 'lon'
+
+
+def _normalize_coordinates(geometry_type_id, geometry_coordinates):
+
+    def f(xyz):
+        return list(flip_xy(drop_z(xyz)))
+
+    if geometry_type_id == 1:
+        geometry_coordinates = f(geometry_coordinates)
+    elif geometry_type_id == 2:
+        geometry_coordinates = [f(x) for x in geometry_coordinates]
+    elif geometry_type_id == 3:
+        geometry_coordinates = [
+            f(x) for l in geometry_coordinates for x in l]
+    elif geometry_type_id == 4:
+        geometry_coordinates = [f(x) for x in geometry_coordinates]
+    elif geometry_type_id == 5:
+        geometry_coordinates = [
+            f(x) for l in geometry_coordinates for x in l]
+    return geometry_coordinates
 
 
 def _parse_point_from_tuple(point_xy):
@@ -315,7 +313,8 @@ def _define_summarize_colors(summary_type):
 
     def summarize(string_series):
         rgb_arrays = string_series.apply(_get_rgb_array)
-        return getattr(rgb_arrays, summary_type)()
+        x = getattr(rgb_arrays, summary_type)()
+        return np.clip(x, 0, 1)
 
     return summarize
 

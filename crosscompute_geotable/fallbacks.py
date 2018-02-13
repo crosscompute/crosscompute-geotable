@@ -1,4 +1,5 @@
 from crosscompute.exceptions import DataTypeError
+from crosscompute_table import TableType
 
 
 RGB_BY_NAME = {
@@ -56,10 +57,27 @@ except ImportError:
     colorConverter = ColorConverter()
     rgb2hex = _rgb2hex
     print('Please install matplotlib for full color support')
+
+
 try:
-    import geometryIO  # noqa
+    import geotable  # noqa
 except ImportError:
-    print('Please install GDAL, shapely, geometryIO for shapefile support')
+    print('Please install gdal, shapely, geotable for full spatial support')
+
+    def load_geotable(source_path):
+        return TableType.load(source_path)
+
+else:
+
+    def load_geotable(source_path):
+        t = geotable.GeoTable.load(
+            source_path, target_proj4=geotable.LONGITUDE_LATITUDE_PROJ4)
+        t['WKT'] = t['geometry_object'].apply(lambda x: x.wkt)
+        return t.drop([
+            'geometry_object',
+            'geometry_layer',  # Drop geometry_layer until we add layer support
+            'geometry_proj4',
+        ], axis=1, errors='ignore')
 
 
 try:
