@@ -219,16 +219,10 @@ def _normalize_coordinates(geometry_type_id, geometry_coordinates):
 
     if geometry_type_id == 1:
         geometry_coordinates = f(geometry_coordinates)
-    elif geometry_type_id == 2:
+    elif geometry_type_id in (2, 4):
         geometry_coordinates = [f(x) for x in geometry_coordinates]
-    elif geometry_type_id == 3:
-        geometry_coordinates = [
-            f(x) for l in geometry_coordinates for x in l]
-    elif geometry_type_id == 4:
-        geometry_coordinates = [f(x) for x in geometry_coordinates]
-    elif geometry_type_id == 5:
-        geometry_coordinates = [
-            f(x) for l in geometry_coordinates for x in l]
+    elif geometry_type_id in (3, 5):
+        geometry_coordinates = [[f(x) for x in l] for l in geometry_coordinates]
     return geometry_coordinates
 
 

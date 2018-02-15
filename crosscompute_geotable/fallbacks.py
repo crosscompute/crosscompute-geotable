@@ -1,5 +1,7 @@
 from crosscompute.exceptions import DataTypeError
 from crosscompute_table import TableType
+from crosscompute_table.exceptions import EmptyTableError
+from geotable.exceptions import EmptyGeoTableError
 
 
 RGB_BY_NAME = {
@@ -70,8 +72,11 @@ except ImportError:
 else:
 
     def load_geotable(source_path):
-        t = geotable.GeoTable.load(
-            source_path, target_proj4=geotable.LONGITUDE_LATITUDE_PROJ4)
+        try:
+            t = geotable.GeoTable.load(
+                source_path, target_proj4=geotable.LONGITUDE_LATITUDE_PROJ4)
+        except EmptyGeoTableError:
+            raise EmptyTableError('file empty')
         t['WKT'] = t['geometry_object'].apply(lambda x: x.wkt)
         return t.drop([
             'geometry_object',

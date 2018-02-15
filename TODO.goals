@@ -6,3 +6,4 @@ Add support for stroke customization
     StrokeReds
     StrokeColor
 Add unit tests for geotable features
+Add support for MULTIPOINT
