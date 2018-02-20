@@ -1,9 +1,9 @@
 from crosscompute.exceptions import DataTypeError
 from crosscompute_table import TableType
 from crosscompute_table.exceptions import EmptyTableError
-from geotable.exceptions import EmptyGeoTableError
 
 
+MAXIMUM_DISPLAY_COUNT = 256
 RGB_BY_NAME = {
     'b': (0.00, 0.00, 1.00),
     'g': (0.00, 0.50, 0.00),
@@ -28,36 +28,33 @@ RGB_BY_NAME['black'] = RGB_BY_NAME['k']
 RGB_BY_NAME['white'] = RGB_BY_NAME['w']
 
 
-class ColorConverter(object):
-
-    def to_rgb(self, x):
-        try:
-            x_float = float(x)
-        except ValueError:
-            if x.startswith('#'):
-                return _hex2rgb(x)
-            try:
-                return RGB_BY_NAME[x]
-            except KeyError:
-                raise ValueError('could not parse color (%s)' % x)
-        if x_float < 0 or x_float > 1:
-            raise ValueError('gray value must be between 0 and 1 (%s)' % x)
-        return (x_float,) * 3
-
-
-def _hex2rgb(x):
-    return tuple([int(n, 16) / 255. for n in (x[1:3], x[3:5], x[5:7])])
-
-
-def _rgb2hex(x):
-    return '#%02x%02x%02x' % tuple(int(round(val * 255)) for val in x[:3])
-
-
 try:
-    from matplotlib.colors import colorConverter, rgb2hex
+    from matplotlib.colors import colorConverter as COLOR_CONVERTER, rgb2hex
 except ImportError:
-    colorConverter = ColorConverter()
-    rgb2hex = _rgb2hex
+
+    class ColorConverter(object):
+
+        def to_rgb(self, x):
+            try:
+                x_float = float(x)
+            except ValueError:
+                if x.startswith('#'):
+                    return hex2rgb(x)
+                try:
+                    return RGB_BY_NAME[x]
+                except KeyError:
+                    raise ValueError('could not parse color (%s)' % x)
+            if x_float < 0 or x_float > 1:
+                raise ValueError('gray value must be between 0 and 1 (%s)' % x)
+            return (x_float,) * 3
+
+    def hex2rgb(x):
+        return tuple([int(n, 16) / 255. for n in (x[1:3], x[3:5], x[5:7])])
+
+    def rgb2hex(x):
+        return '#%02x%02x%02x' % tuple(int(round(val * 255)) for val in x[:3])
+
+    COLOR_CONVERTER = ColorConverter()
     print('Please install matplotlib for full color support')
 
 
@@ -66,23 +63,36 @@ try:
 except ImportError:
     print('Please install gdal, shapely, geotable for full spatial support')
 
-    def load_geotable(source_path):
-        return TableType.load(source_path)
+    def load_geotable(source_path, partly=False):
+        return TableType.load(source_path, partly=partly)
 
 else:
+    from geotable.exceptions import EmptyGeoTableError
 
-    def load_geotable(source_path):
+    def load_geotable(source_path, partly=False):
+        kw = {}
+        if partly:
+            kw['nrows'] = MAXIMUM_DISPLAY_COUNT + 1
         try:
             t = geotable.GeoTable.load(
-                source_path, target_proj4=geotable.LONGITUDE_LATITUDE_PROJ4)
+                source_path,
+                target_proj4=geotable.LONGITUDE_LATITUDE_PROJ4, **kw)
         except EmptyGeoTableError:
             raise EmptyTableError('file empty')
+
         t['WKT'] = t['geometry_object'].apply(lambda x: x.wkt)
-        return t.drop([
+        t = t.drop([
             'geometry_object',
             'geometry_layer',  # Drop geometry_layer until we add layer support
             'geometry_proj4',
         ], axis=1, errors='ignore')
+
+        if len(t) > MAXIMUM_DISPLAY_COUNT:
+            t = t[:MAXIMUM_DISPLAY_COUNT]
+            t.is_abbreviated = True
+        else:
+            t.is_abbreviated = False
+        return t
 
 
 try:
@@ -93,7 +103,7 @@ except ImportError:
     WKT_PATTERN = re.compile(r'([A-Za-z]+)\s*\(([0-9 -.,()]*)\)')
     SEQUENCE_PATTERN = re.compile(r'\(([0-9 -.,()]*?)\)')
 
-    def _parse_geometry(geometry_wkt):
+    def parse_geometry(geometry_wkt):
         try:
             geometry_type, xys_string = WKT_PATTERN.match(
                 geometry_wkt).groups()
@@ -148,7 +158,7 @@ except ImportError:
 else:
     from shapely.errors import WKTReadingError
 
-    def _parse_geometry(geometry_wkt):
+    def parse_geometry(geometry_wkt):
         try:
             geometry = wkt.loads(geometry_wkt)
         except WKTReadingError:

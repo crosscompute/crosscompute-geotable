@@ -38,7 +38,7 @@ $.each(CC.geotable.definitions, draw_map);
 <div id="{{ key }}-map" class="geotable-map"></div>
 
 {% if table.is_abbreviated %}
-<div class="alert alert-warning">Showing first {{ '{:,}'.format(packs|length) }} out of {{ '{:,}'.format(row_count) }} features</div>
+<div class="alert alert-warning">Showing first {{ '{:,}'.format(packs|length) }} features</div>
 {% endif %}
 
 <table id="{{ key }}-table" class="table geotable-table">
