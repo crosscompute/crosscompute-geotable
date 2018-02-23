@@ -131,6 +131,7 @@ def get_display_bundle(table):
     if not geometry_column_names:
         raise DataTypeError(
             'geometry columns missing (%s)' % ', '.join(table.columns))
+    t = table.dropna(subset=geometry_column_names)
     if len(geometry_column_names) > 1:
         parse = parse_point_from_tuple
     else:
@@ -139,23 +140,21 @@ def get_display_bundle(table):
     for get_transform in [
             get_fill_color_transform,
             get_radius_transform]:
-        transform = get_transform(table, geometry_column_names)
+        transform = get_transform(t, geometry_column_names)
         if not transform:
             continue
         transforms.append(transform)
 
-    for geometry_value, local_table in table.groupby(geometry_column_names):
+    for geometry_value, local_t in t.groupby(geometry_column_names):
         geometry_type_id, geometry_coordinates = parse(geometry_value)
         geometry_coordinates = normalize_coordinates(
             geometry_type_id, geometry_coordinates)
         local_properties = {}
         for transform in transforms:
-            local_properties, local_table = transform(
-                local_properties, local_table)
-        local_table = local_table.drop(geometry_column_names, axis=1)
+            local_properties, local_t = transform(local_properties, local_t)
+        local_t = local_t.drop(geometry_column_names, axis=1)
         packs.append((
-            geometry_type_id, geometry_coordinates, local_properties,
-            local_table))
+            geometry_type_id, geometry_coordinates, local_properties, local_t))
     return packs, properties
 
 
