@@ -66,6 +66,9 @@ except ImportError:
     def load_geotable(source_path, partly=False):
         return TableType.load(source_path, partly=partly)
 
+    def save_geotable(target_path, table):
+        return TableType.save(target_path, table)
+
 else:
     from geotable.exceptions import EmptyGeoTableError
 
@@ -93,6 +96,10 @@ else:
         else:
             t.is_abbreviated = False
         return t
+
+    def save_geotable(target_path, table):
+        t = geotable.GeoTable.from_records(table)
+        return TableType.save(target_path, t)
 
 
 try:

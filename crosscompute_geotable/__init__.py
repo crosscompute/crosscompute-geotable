@@ -2,7 +2,7 @@ from crosscompute.scripts.serve import import_upload_from
 from crosscompute_table import TableType
 from os.path import exists
 
-from .fallbacks import load_geotable
+from .fallbacks import load_geotable, save_geotable
 from .routines import DisplayTable
 
 
@@ -27,6 +27,10 @@ class GeoTableType(TableType):
         if not exists(path):
             raise IOError('file not found (%s)' % path)
         return load_geotable(path, partly)
+
+    @classmethod
+    def save(Class, path, table):
+        return save_geotable(path, table)
 
 
 def import_geotable(request):
