@@ -121,9 +121,10 @@ except ImportError:
             geometry_type_id = {
                 'POINT': 1,
                 'LINESTRING': 2,
-                'MULTILINESTRING': 3,
-                'POLYGON': 4,
-                'MULTIPOLYGON': 5,
+                'POLYGON': 3,
+                'MULTIPOINT': 4,
+                'MULTILINESTRING': 5,
+                'MULTIPOLYGON': 6,
             }[geometry_type]
         except KeyError:
             raise DataTypeError(
@@ -134,12 +135,14 @@ except ImportError:
             geometry_coordinates = _parse_geometry_coordinates(xys_string)
         elif geometry_type_id == 3:
             xys_strings = SEQUENCE_PATTERN.findall(xys_string)
+            geometry_coordinates = _parse_geometry_coordinates(xys_strings[0])
+        elif geometry_type_id == 4:
+            geometry_coordinates = _parse_geometry_coordinates(xys_string)
+        elif geometry_type_id == 5:
+            xys_strings = SEQUENCE_PATTERN.findall(xys_string)
             geometry_coordinates = [
                 _parse_geometry_coordinates(_) for _ in xys_strings]
-        elif geometry_type_id == 4:
-            xys_strings = SEQUENCE_PATTERN.findall(xys_string)
-            geometry_coordinates = _parse_geometry_coordinates(xys_strings[0])
-        elif geometry_type_id == 5:
+        elif geometry_type_id == 6:
             xys_strings = SEQUENCE_PATTERN.findall(xys_string)
             geometry_coordinates = []
             for xy_string in xys_strings:
@@ -179,17 +182,21 @@ else:
             geometry_type_id = 2
             geometry_coordinates = [
                 list(x[:2]) for x in geometry.coords]
-        elif geometry_type == 'MULTILINESTRING':
+        elif geometry_type == 'POLYGON':
             geometry_type_id = 3
+            geometry_coordinates = [
+                list(x[:2]) for x in geometry.exterior.coords]
+        elif geometry_type == 'MULTIPOINT':
+            geometry_type_id = 4
+            geometry_coordinates = [
+                geom.coords[0][:2] for geom in geometry.geoms]
+        elif geometry_type == 'MULTILINESTRING':
+            geometry_type_id = 5
             geometry_coordinates = [[
                 list(x[:2]) for x in geom.coords
             ] for geom in geometry.geoms]
-        elif geometry_type == 'POLYGON':
-            geometry_type_id = 4
-            geometry_coordinates = [
-                list(x[:2]) for x in geometry.exterior.coords]
         elif geometry_type == 'MULTIPOLYGON':
-            geometry_type_id = 5
+            geometry_type_id = 6
             geometry_coordinates = [[
                 list(x[:2]) for x in geom.exterior.coords
             ] for geom in geometry.geoms]
