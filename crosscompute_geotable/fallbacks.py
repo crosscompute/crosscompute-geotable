@@ -90,7 +90,7 @@ else:
             'geometry_proj4',
         ], axis=1, errors='ignore')
 
-        if len(t) > MAXIMUM_DISPLAY_COUNT:
+        if partly and len(t) > MAXIMUM_DISPLAY_COUNT:
             t = t[:MAXIMUM_DISPLAY_COUNT]
             t.is_abbreviated = True
         else:
