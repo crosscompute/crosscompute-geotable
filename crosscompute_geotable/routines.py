@@ -135,11 +135,26 @@ def get_display_bundle(table):
     if not geometry_column_names:
         raise DataTypeError(
             'geometry columns missing (%s)' % ', '.join(table.columns))
-    t = table.dropna(subset=geometry_column_names)
-    if len(geometry_column_names) > 1:
+    elif len(geometry_column_names) > 1:
         parse = parse_point_from_tuple
     else:
         parse = parse_geometry
+        wkt_column_name = geometry_column_names[0]
+        table = table[~table[wkt_column_name].str.contains('EMPTY')]
+    t = table.dropna(subset=geometry_column_names)
+    # !!! Quickfix
+    local_ts = []
+    geometry_packs = []
+    for geometry_value, local_t in t.groupby(geometry_column_names):
+        try:
+            geometry_pack = parse(geometry_value)
+        except Exception:
+            L.warning('could not parse geometry_value=%s' % geometry_value)
+            continue
+        geometry_packs.append(geometry_pack)
+        local_ts.append(local_t)
+    t = pd.concat(local_ts)
+
     transforms = []
     for get_transform in [
             get_fill_color_transform,
@@ -149,13 +164,8 @@ def get_display_bundle(table):
             continue
         transforms.append(transform)
 
-    for geometry_value, local_t in t.groupby(geometry_column_names):
-        # !!! We are assuming that geometry_value is a WKT
-        try:
-            geometry_type_id, geometry_coordinates = parse(geometry_value)
-        except Exception:
-            L.warning('could not parse geometry_value=%s' % geometry_value)
-            continue
+    for geometry_pack, local_t in zip(geometry_packs, local_ts):
+        geometry_type_id, geometry_coordinates = geometry_pack
         geometry_coordinates = normalize_coordinates(
             geometry_type_id, geometry_coordinates)
         local_properties = {}
