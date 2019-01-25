@@ -83,6 +83,7 @@ else:
         except EmptyGeoTableError:
             raise EmptyTableError('file empty')
 
+        # !!! Reconsider why we need to add WKT column here
         t['WKT'] = t['geometry_object'].apply(lambda x: x.wkt)
         t = t.drop([
             'geometry_object',

@@ -4,10 +4,14 @@ import re
 from crosscompute.exceptions import DataTypeError
 from invisibleroads_macros.calculator import define_normalize
 from invisibleroads_macros.geometry import drop_z, flip_xy
+from invisibleroads_macros.log import get_log
 from invisibleroads_macros.table import normalize_key
 from math import floor
 
 from .fallbacks import parse_geometry, rgb2hex, COLOR_CONVERTER
+
+
+L = get_log(__name__)
 
 
 # These color schemes are courtesy of http://colorbrewer2.org
@@ -146,7 +150,12 @@ def get_display_bundle(table):
         transforms.append(transform)
 
     for geometry_value, local_t in t.groupby(geometry_column_names):
-        geometry_type_id, geometry_coordinates = parse(geometry_value)
+        # !!! We are assuming that geometry_value is a WKT
+        try:
+            geometry_type_id, geometry_coordinates = parse(geometry_value)
+        except Exception:
+            L.warning('could not parse geometry_value=%s' % geometry_value)
+            continue
         geometry_coordinates = normalize_coordinates(
             geometry_type_id, geometry_coordinates)
         local_properties = {}

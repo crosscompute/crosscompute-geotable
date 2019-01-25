@@ -12,3 +12,12 @@ def test_get_display_bundle():
     assert len(packs) == 1
     assert packs[0][0] == 1
     assert packs[0][1] == [0, 0]
+
+    t = pd.DataFrame([
+        ('a', 'POINT (0 0)'),
+        ('b', 'POINT EMPTY'),
+    ], columns=['name', 'wkt'])
+    packs, properties = routines.get_display_bundle(t)
+    assert len(packs) == 1
+    assert packs[0][0] == 1
+    assert packs[0][1] == [0, 0]
