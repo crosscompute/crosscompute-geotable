@@ -4,14 +4,10 @@ import re
 from crosscompute.exceptions import DataTypeError
 from invisibleroads_macros.calculator import define_normalize
 from invisibleroads_macros.geometry import drop_z, flip_xy
-from invisibleroads_macros.log import get_log
 from invisibleroads_macros.table import normalize_key
 from math import floor
 
 from .fallbacks import parse_geometry, rgb2hex, COLOR_CONVERTER
-
-
-L = get_log(__name__)
 
 
 # These color schemes are courtesy of http://colorbrewer2.org
@@ -127,6 +123,7 @@ class DisplayTable(pd.DataFrame):
         # Prepare display bundle in constructor to capture data type errors
         self.display_bundle = get_display_bundle(self)
         self.is_abbreviated = is_abbreviated
+        self.ignored_count = len(self) - len(self.display_bundle[0])
 
 
 def get_display_bundle(table):
@@ -140,7 +137,12 @@ def get_display_bundle(table):
     else:
         parse = parse_geometry
         wkt_column_name = geometry_column_names[0]
-        table = table[~table[wkt_column_name].str.contains('EMPTY')]
+        bad_mask = table[wkt_column_name].str.contains('EMPTY')
+        for label, row in table[bad_mask].iterrows():
+            print(
+                f'geometry_wkt.warning = '
+                f'skipping {row[wkt_column_name]} at loc[{label}]')
+        table = table[~bad_mask]
     t = table.dropna(subset=geometry_column_names)
     # !!! Quickfix
     local_ts = []
@@ -149,7 +151,7 @@ def get_display_bundle(table):
         try:
             geometry_pack = parse(geometry_value)
         except Exception:
-            L.warning('could not parse geometry_value=%s' % geometry_value)
+            print(f'geometry_value.warning = skipping {geometry_value}')
             continue
         geometry_packs.append(geometry_pack)
         local_ts.append(local_t)

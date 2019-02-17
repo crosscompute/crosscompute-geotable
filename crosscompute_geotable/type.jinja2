@@ -37,6 +37,10 @@ $.each(CC.geotable.definitions, draw_map);
 {% set column_names = packs[0][-1].columns if packs else [] %}
 <div id="{{ key }}-map" class="geotable-map"></div>
 
+{% if table.ignored_count %}
+<div class="alert alert-warning">Ignored {{ '{:,}'.format(table.ignored_count) }} duplicate or empty geometries</div>
+{% endif %}
+
 {% if table.is_abbreviated %}
 <div class="alert alert-warning">Showing first {{ '{:,}'.format(packs|length) }} features</div>
 {% endif %}

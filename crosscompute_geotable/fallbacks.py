@@ -3,7 +3,7 @@ from crosscompute_table import TableType
 from crosscompute_table.exceptions import EmptyTableError
 
 
-MAXIMUM_DISPLAY_COUNT = 256
+MAXIMUM_DISPLAY_COUNT = 1024
 RGB_BY_NAME = {
     'b': (0.00, 0.00, 1.00),
     'g': (0.00, 0.50, 0.00),
