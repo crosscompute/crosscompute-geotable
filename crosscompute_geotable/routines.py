@@ -128,6 +128,8 @@ class DisplayTable(pd.DataFrame):
 
 def get_display_bundle(table):
     packs, properties = [], {}
+    if not len(table):
+        return packs, properties
     geometry_column_names = get_geometry_column_names(table.columns)
     if not geometry_column_names:
         raise DataTypeError(
@@ -137,6 +139,7 @@ def get_display_bundle(table):
     else:
         parse = parse_geometry
         wkt_column_name = geometry_column_names[0]
+        table[wkt_column_name] = table[wkt_column_name].astype(str)
         bad_mask = table[wkt_column_name].str.contains('EMPTY')
         for label, row in table[bad_mask].iterrows():
             print(
